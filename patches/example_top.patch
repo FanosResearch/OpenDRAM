@@ -1,0 +1,119 @@
+--- ../gen/ddr4_0_ex/imports/example_top.sv	2025-04-30 15:46:14.000000000 -0400
++++ ./example_top.sv	2025-04-29 15:47:43.000000000 -0400
+@@ -83,7 +83,9 @@
+ `elsif _VCP
+     `define SIMULATION_MODE
+ `endif
+-
++`ifdef SIMULATION_MODE
++  `include "sim_macros.svh"
++`endif
+ 
+ `timescale 1ps/1ps
+ module example_top #
+@@ -381,6 +383,13 @@
+ wire boot_mode_start;
+ wire boot_mode_done;
+ assign boot_mode_start = c0_init_calib_complete_r1 && ~c0_init_calib_complete_r3; //boot_mode_start needs to be a pulse
++
++//-----------------------------------------------------------------------------
++//------------- Default MIG AXI Standard Traffic Generator (STG) --------------
++//-----------------------------------------------------------------------------
++
++`ifndef USE_AXI_VIP
++
+ ddr4_v2_2_16_axi_tg_top #(
+      .SIMULATION    (SIMULATION),
+      .C_AXI_ID_WIDTH (C_AXI_ID_WIDTH),
+@@ -540,6 +549,91 @@
+ 
+ `endif
+ 
++`endif // `ifndef AXI_VIP
++
++//-----------------------------------------------------------------------------
++//------------------- OpenDRAM Custom AXI Traffic Generator -------------------
++//----------------------------------------------------------------------------- 
++
++`ifdef SIMULATION_MODE
++`ifdef USE_AXI_VIP
++  
++  `include "axi_vip_0_mst_stimulus.svh"
++
++  initial begin
++    fork
++      mst_start_stimulus();
++    join;
++  end
++    
++  logic user_clken;
++  initial begin
++    user_clken = 1'b0;
++    #4035300
++    user_clken = 1'b1;
++  end
++    
++  logic user_rst;
++  initial begin
++    //#2000
++    user_rst = 1'b0;
++    // #807200
++    #4135300
++    user_rst = 1'b1;
++  end
++
++  logic [127 : 0] current_cycle;
++  always @(posedge c0_ddr4_clk) begin
++    if (~c0_ddr4_rst == 1'b0) begin
++        current_cycle <= 'd0;
++    end
++    else begin
++        current_cycle <= current_cycle + 'd1;
++    end
++  end
++
++  axi_vip_0 axi_vip_0_inst (
++    .aclk(c0_ddr4_clk),                     
++    .aclken(user_clken),                    
++    .aresetn(user_rst),                     
++    .m_axi_awid(c0_ddr4_s_axi_awid),        
++    .m_axi_awaddr(c0_ddr4_s_axi_awaddr),    
++    .m_axi_awlen(c0_ddr4_s_axi_awlen),      
++    .m_axi_awsize(c0_ddr4_s_axi_awsize),    
++    .m_axi_awburst(c0_ddr4_s_axi_awburst),  
++    .m_axi_awcache(c0_ddr4_s_axi_awcache),  
++    .m_axi_awprot(c0_ddr4_s_axi_awprot),    
++    .m_axi_awvalid(c0_ddr4_s_axi_awvalid),  
++    .m_axi_awready(c0_ddr4_s_axi_awready),  
++    .m_axi_wdata(c0_ddr4_s_axi_wdata),      
++    .m_axi_wstrb(c0_ddr4_s_axi_wstrb),      
++    .m_axi_wlast(c0_ddr4_s_axi_wlast),      
++    .m_axi_wvalid(c0_ddr4_s_axi_wvalid),    
++    .m_axi_wready(c0_ddr4_s_axi_wready),    
++    .m_axi_bid(c0_ddr4_s_axi_bid),          
++    .m_axi_bresp(c0_ddr4_s_axi_bresp),      
++    .m_axi_bvalid(c0_ddr4_s_axi_bvalid),    
++    .m_axi_bready(c0_ddr4_s_axi_bready),    
++    .m_axi_arid(c0_ddr4_s_axi_arid),        
++    .m_axi_araddr(c0_ddr4_s_axi_araddr),    
++    .m_axi_arlen(c0_ddr4_s_axi_arlen),      
++    .m_axi_arsize(c0_ddr4_s_axi_arsize),    
++    .m_axi_arburst(c0_ddr4_s_axi_arburst),  
++    .m_axi_arcache(c0_ddr4_s_axi_arcache),  
++    .m_axi_arprot(),    
++    .m_axi_arvalid(c0_ddr4_s_axi_arvalid),  
++    .m_axi_arready(c0_ddr4_s_axi_arready),  
++    .m_axi_rid(c0_ddr4_s_axi_rid),          
++    .m_axi_rdata(c0_ddr4_s_axi_rdata),      
++    .m_axi_rresp(c0_ddr4_s_axi_rresp),      
++    .m_axi_rlast(c0_ddr4_s_axi_rlast),      
++    .m_axi_rvalid(c0_ddr4_s_axi_rvalid),    
++    .m_axi_rready(c0_ddr4_s_axi_rready)     
++    );
++
++`endif // `ifdef USE_AXI_VIP
++`endif // `ifdef SIMULATION_MODE
++
+ endmodule
+ 
+ 
