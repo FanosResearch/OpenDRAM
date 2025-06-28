@@ -88,4 +88,4 @@ Macros in the file (For more clarity, please also read the comments in the file 
 
 ## License
 
-This HDL design is licensed under the SolderPad Hardware License, Version 0.51. See the [LICENSE](LICENSE) file for details.
+This HDL design is licensed under the SolderPad Hardware License, Version 0.51. See the [LICENSE.md](LICENSE.md) file for details.
