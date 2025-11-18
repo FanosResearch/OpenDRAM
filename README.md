@@ -86,6 +86,36 @@ Macros in the file (For more clarity, please also read the comments in the file 
 17. *WSTRB_WIDTH:* Width of the write strobe signal. Calculated automatically based on the value of AXI_DATA_WIDTH
 18. *AXI_BURST_LENGTH:* Length of the AXI burst.
 
+## Publication
+
+This repository accompanies the research paper:
+
+**OpenDRAM: A Modular, High-performance Soft Memory Controller for DDR4 DRAM**  
+*Ali Abbasi, Danesh Germchi, Amin Katani, Mohamed Hassan, and Rodolfo Pellizzoni. 2025.*  
+
+🔗 **ACM Digital Library:** <https://dl.acm.org/doi/10.1145/3772724>
+
+Slides presented at the [International Conference on Field-Programmable Technology (FPT2025)](https://fpt2025.shanghaitech.edu.cn/): Will be uploaded soon.
+
+If you use OpenDRAM in your work, please cite us:
+
+```
+@article{10.1145/3772724,
+author = {Abbasi, Ali and Germchi, Danesh and Katani, Amin and Hassan, Mohamed and Pellizzoni, Rodolfo},
+title = {OpenDRAM: A Modular, High-performance Soft Memory Controller for DDR4 DRAM},
+year = {2025},
+publisher = {Association for Computing Machinery},
+address = {New York, NY, USA},
+issn = {1936-7406},
+url = {https://doi.org/10.1145/3772724},
+doi = {10.1145/3772724},
+note = {Just Accepted},
+journal = {ACM Trans. Reconfigurable Technol. Syst.},
+month = oct,
+keywords = {DRAM, Memory Controller, High-performance Memory, FPGA, Open-source}
+}
+```
+
 ## License
 
 This HDL design is licensed under the SolderPad Hardware License, Version 0.51. See the [LICENSE.md](LICENSE.md) file for details.
