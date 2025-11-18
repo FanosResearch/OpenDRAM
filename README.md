@@ -86,6 +86,10 @@ Macros in the file (For more clarity, please also read the comments in the file 
 17. *WSTRB_WIDTH:* Width of the write strobe signal. Calculated automatically based on the value of AXI_DATA_WIDTH
 18. *AXI_BURST_LENGTH:* Length of the AXI burst.
 
+## Support
+
+If you have any questions regarding this work, please contact the corresponding author of the paper, **Ali Abbasi**. Their email address is provided in the published manuscript linked below.
+
 ## Publication
 
 This repository accompanies the research paper:
