@@ -99,7 +99,7 @@ This repository accompanies the research paper:
 
 🔗 **ACM Digital Library:** <https://dl.acm.org/doi/10.1145/3772724>
 
-Slides presented at the [International Conference on Field-Programmable Technology (FPT2025)](https://fpt2025.shanghaitech.edu.cn/): Will be uploaded soon.
+Slides presented at the [International Conference on Field-Programmable Technology (FPT2025)](https://fpt2025.shanghaitech.edu.cn/): [View](fpt2025/opendram_fpt2025.pdf)
 
 If you use OpenDRAM in your work, please cite us:
 
