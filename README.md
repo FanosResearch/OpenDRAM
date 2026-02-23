@@ -56,14 +56,14 @@ Please note that in order to use these scripts, user must:
 1. Ensure that the WSL is enabled and the command "wsl" works on their PowerShell
 2. Ensure that Vivado can be executed through PowerShell using command "vivado"
 
-## Running Simulationations
+## Running Simulations
 
 Users are able to run simulations using either the synthesizable MIG traffic generator or the non-synthesizable custom infrastructor. The custom simulation infrastructure is developed using AMD AXI VIP, which reads memory access traces in a particular format and generates corresponding requests to the memory controller. Our infrustructure is able to mimic a multi-kernel system in which the arbitration is done in a round-robin fashion. Users can also define the size of stream buffer for kernels. Both type of simulations can be simply run through Vivado ISIM.
 
 Setup parameters for the simulation infrastructure are accessible in the file below.
 
 ```
-./src/sim_macros.svh
+./src/axi_vip/sim_macros.svh
 ```
 
 Macros in the file (For more clarity, please also read the comments in the file for each macro):
