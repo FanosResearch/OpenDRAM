@@ -15,71 +15,72 @@
 
 module frfcfs_b#(
 
-    parameter       CH_WIDTH    = 1,
-    parameter       RNK_WIDTH   = 1,
-    parameter       BG_WIDTH    = 2,
-    parameter       BNK_WIDTH   = 2,
-    parameter       COL_WIDTH   = 10,
-    parameter       ROW_WIDTH   = 18,
-    parameter       ADDR_WIDTH  = (RNK_WIDTH + BG_WIDTH + BNK_WIDTH + COL_WIDTH + ROW_WIDTH),
+    parameter CH_SEL_WIDTH  = 1,
+    parameter RNK_SEL_WIDTH = 1,
+    parameter BG_SEL_WIDTH  = 2,
+    parameter BNK_SEL_WIDTH = 2,
+    parameter ROW_SEL_WIDTH = 18,
+    parameter COL_SEL_WIDTH = 10,
+    parameter ADDR_WIDTH    = (RNK_SEL_WIDTH + BG_SEL_WIDTH + BNK_SEL_WIDTH + COL_SEL_WIDTH + ROW_SEL_WIDTH),
 
-    parameter       GFIFO_SIZE  = 8,
-    parameter       DPTR_WIDTH  = 5,
-    parameter       REQ_WIDTH   = 2,
+    parameter GFIFO_SIZE        = 8,
+    parameter DPTR_WIDTH        = 5,
+    parameter REQ_TYPE_WIDTH    = 2,
     
-    parameter       TCQ         = 100
+    parameter TCQ = 100
 
     )(
 
-    input wire                          rst_n,
-    input wire                          clk,
+    input wire i_clk,
+    input wire i_rstn,
     
-    input wire [CH_WIDTH-1:0]           channel,
-    input wire [RNK_WIDTH-1:0]          rank,
-    input wire [BG_WIDTH-1:0]           bg,
-    input wire [BNK_WIDTH-1:0]          bank,
-    input wire [COL_WIDTH-1:0]          col,
-    input wire [ROW_WIDTH-1:0]          row,
-    input wire [DPTR_WIDTH-1:0]         dptr,
-    input wire                          ap, 
-    input wire [REQ_WIDTH-1:0]          req_type, // RD:01, WR:00
+    input wire [CH_SEL_WIDTH-1:0]   i_channel,
+    input wire [RNK_SEL_WIDTH-1:0]  i_rank,
+    input wire [BG_SEL_WIDTH-1:0]   i_group,
+    input wire [BNK_SEL_WIDTH-1:0]  i_bank,
+    input wire [ROW_SEL_WIDTH-1:0]  i_row,
+    input wire [COL_SEL_WIDTH-1:0]  i_column,
+    input wire [DPTR_WIDTH-1:0]     i_dptr,
+    input wire                      i_ap, 
+    input wire [REQ_TYPE_WIDTH-1:0] i_req_type, // RD:01, WR:00
 
-    input wire                          idle_flag,
-    input wire [ROW_WIDTH-1:0]          open_row,
-    input wire                          use_addr,
+    input wire                      i_bank_is_idle,
+    input wire [ROW_SEL_WIDTH-1:0]  i_current_open_row,
+    input wire                      i_use_addr,
 
-    input wire                          init_data_rd,
-    input wire                          init_data_wr,
-    input wire  [DPTR_WIDTH-1:0]        done_rd_dptr,
-    input wire  [DPTR_WIDTH-1:0]        done_wr_dptr,
+    input wire                      i_init_data_rd,
+    input wire                      i_init_data_wr,
+    input wire  [DPTR_WIDTH-1:0]    i_done_rd_dptr,
+    input wire  [DPTR_WIDTH-1:0]    i_done_wr_dptr,
 
-    output  wire [DPTR_WIDTH-1:0]       won_dptr,
-    output  wire                        won_open,
-    output  wire                        won,
-    output  wire [ADDR_WIDTH-1:0]       won_addr,
-    output  wire                        won_ap,
-    output  wire [2-1:0]                won_cmd,
-    output  wire                        won_inject,
-    input   wire                        block_from_command_generator, // this signal is coming from command generator or downstream
-    input   wire                        block_from_mc_refresh,
+    output wire [DPTR_WIDTH-1:0]   o_won_dptr,
+    output wire                    o_won_open,
+    output wire                    o_won_valid,
+    output wire [ADDR_WIDTH-1:0]   o_won_addr,
+    output wire                    o_won_ap,
+    output wire [2-1:0]            o_won_req,
+    output wire                    o_won_inject,
+
+    input wire i_block_from_command_generator,
+    input wire i_block_from_mc_refresh,
     
-    output wire                         is_full
+    output wire o_is_full
 
     );
     
-    localparam PACKET_WDITH = (ADDR_WIDTH + 1 /*(1 bit for ap)*/  + 1 /*(1 bit for inject)*/ + 2 /*(2 bits for cmd)*/);
+    localparam PACKET_WIDTH = (ADDR_WIDTH + 1 /*(1 bit for ap)*/  + 1 /*(1 bit for inject)*/ + 2 /*(2 bits for cmd)*/);
 
-    typedef logic [CH_WIDTH-1:0]            channel_t;
-    typedef logic [RNK_WIDTH-1:0]           rank_t;
-    typedef logic [BG_WIDTH-1:0]            group_t;
-    typedef logic [BNK_WIDTH-1:0]           bank_t;
-    typedef logic [ROW_WIDTH-1:0]           row_t;
-    typedef logic [COL_WIDTH-1:0]           col_t;
-    typedef logic [(DPTR_WIDTH-1):0]        dptr_t;
-    typedef logic [(2-1):0]                 cmd_t;
-    typedef logic                           ap_t;
-    typedef logic                           inject_t;
-    typedef logic                           type_t;
+    typedef logic [CH_SEL_WIDTH-1:0]    channel_t;
+    typedef logic [RNK_SEL_WIDTH-1:0]   rank_t;
+    typedef logic [BG_SEL_WIDTH-1:0]    group_t;
+    typedef logic [BNK_SEL_WIDTH-1:0]   bank_t;
+    typedef logic [ROW_SEL_WIDTH-1:0]   row_t;
+    typedef logic [COL_SEL_WIDTH-1:0]   col_t;
+    typedef logic [(DPTR_WIDTH-1):0]    dptr_t;
+    typedef logic [(2-1):0]             cmd_t;
+    typedef logic                       ap_t;
+    typedef logic                       inject_t;
+    typedef logic                       type_t;
 
     typedef struct packed {
         channel_t   channel;
@@ -117,8 +118,8 @@ module frfcfs_b#(
     dptr_fifo_t  dptr_fifo_nxt [GFIFO_SIZE-1:0];
 
     // wires to extract a request from the fifo
-    wire [PACKET_WDITH-1:0] request_extract_1 [GFIFO_SIZE-1:0];
-    wire [GFIFO_SIZE-1:0] request_extract_2 [PACKET_WDITH-1:0];
+    wire [PACKET_WIDTH-1:0] request_extract_1 [GFIFO_SIZE-1:0];
+    wire [GFIFO_SIZE-1:0] request_extract_2 [PACKET_WIDTH-1:0];
 
     wire [DPTR_WIDTH-1:0] dptr_extract_1 [GFIFO_SIZE-1:0];
     wire [GFIFO_SIZE-1:0] dptr_extract_2 [DPTR_WIDTH-1:0];
@@ -142,7 +143,6 @@ module frfcfs_b#(
     reg [(GFIFO_SIZE+1)-1:0] first_empty_index; // one extra bit in MSB, meaning fullness if it's one
     reg [(GFIFO_SIZE+1)-1:0] first_empty_index_comb;
     
-    
     reg [(GFIFO_SIZE+1)-1:0] last_occupied_index; // one extra bit in LSB, meaning emptyness if it's one
     reg [(GFIFO_SIZE+1)-1:0] last_occupied_index_comb;
 
@@ -153,7 +153,7 @@ module frfcfs_b#(
     wire is_there_any_ready;
 
     wire    accept;
-    wire    stall = block_from_command_generator | block_from_mc_refresh;
+    wire    stall = i_block_from_command_generator | i_block_from_mc_refresh;
     reg     init_data_d1;
 
     addr_t  new_req_addr;
@@ -171,10 +171,10 @@ module frfcfs_b#(
         end
     endgenerate
    
-    always @(posedge clk) begin
+    always @(posedge i_clk) begin
         done_request_idx_wr_d1  <= #TCQ done_request_idx_wr_d1_comb;
-        req_type_d1             <= #TCQ req_type[0];
-        init_data_d1            <= #TCQ init_data_rd & init_data_wr;
+        req_type_d1             <= #TCQ i_req_type[0];
+        init_data_d1            <= #TCQ i_init_data_rd & i_init_data_wr;
     end
 
     // updating data pointer fifo
@@ -183,12 +183,12 @@ module frfcfs_b#(
     generate
         for (i=0; i<GFIFO_SIZE; i++) begin
             if(i<GFIFO_SIZE-1) begin
-                assign dptr_fifo_nxt[i] = (dptr_wr_en[i] & use_addr & accept ) ? {1'b1, req_type_d1, dptr} : ((shift_enable[i]) ? dptr_fifo[i+1] : dptr_fifo[i]);
+                assign dptr_fifo_nxt[i] = (dptr_wr_en[i] & i_use_addr & accept ) ? {1'b1, req_type_d1, i_dptr} : ((shift_enable[i]) ? dptr_fifo[i+1] : dptr_fifo[i]);
             end else begin
-                assign dptr_fifo_nxt[GFIFO_SIZE-1] = (dptr_wr_en[GFIFO_SIZE-1] & use_addr & accept) ? {1'b1, req_type_d1, dptr} : {1'b0, 1'b0, dptr_fifo[GFIFO_SIZE-1][DPTR_WIDTH-1:0]};
+                assign dptr_fifo_nxt[GFIFO_SIZE-1] = (dptr_wr_en[GFIFO_SIZE-1] & i_use_addr & accept) ? {1'b1, req_type_d1, i_dptr} : {1'b0, 1'b0, dptr_fifo[GFIFO_SIZE-1][DPTR_WIDTH-1:0]};
             end
-            always@(posedge clk) begin
-                if(~rst_n)
+            always@(posedge i_clk) begin
+                if(~i_rstn)
                     dptr_fifo[i] <= #TCQ 1'b0;
                 else    
                     dptr_fifo[i] <= #TCQ dptr_fifo_nxt[i];
@@ -196,26 +196,26 @@ module frfcfs_b#(
         end  
     endgenerate
 
-    assign new_req_addr.channel         = channel;    
-    assign new_req_addr.rank            = rank;
-    assign new_req_addr.group           = bg;
-    assign new_req_addr.bank            = bank;
-    assign new_req_addr.row             = row;
-    assign new_req_addr.col             = col;
+    assign new_req_addr.channel         = i_channel;    
+    assign new_req_addr.rank            = i_rank;
+    assign new_req_addr.group           = i_group;
+    assign new_req_addr.bank            = i_bank;
+    assign new_req_addr.row             = i_row;
+    assign new_req_addr.col             = i_column;
     assign arrived_request.addr         = new_req_addr;
-    assign arrived_request.ap           = ap;
+    assign arrived_request.ap           = i_ap;
     assign arrived_request.inject       = 1'b0;
-    assign arrived_request.cmd          = req_type[1:0];
+    assign arrived_request.cmd          = i_req_type[1:0];
 
     // comparator module
     // 1: is hit
     for (i=0; i<GFIFO_SIZE; i++) begin : HIT_IDX
-        assign hit[i] = gfifo[i].addr.row == open_row;
+        assign hit[i] = gfifo[i].addr.row == i_current_open_row;
     end
 
     // determinig hit request one-hot index
     assign hit_and_schedulable = hit & schedulable;
-    assign is_there_any_ready = (|hit_and_schedulable) & (~idle_flag);
+    assign is_there_any_ready = (|hit_and_schedulable) & (~i_bank_is_idle);
     assign final_flag = (is_there_any_ready) ? hit_and_schedulable : schedulable;
     for (i=0; i<GFIFO_SIZE; i++) begin : SEL_IDX
         if(i==0) begin
@@ -233,7 +233,7 @@ module frfcfs_b#(
             
             if(i<GFIFO_SIZE-1) begin
                 always @(*) begin
-                    if(last_enqueued_index[i] & use_addr) begin
+                    if(last_enqueued_index[i] & i_use_addr) begin
                         schedulable_comb[i] = 1'b1;
                     end else begin
                         case({shift_enable[i], stall})
@@ -246,7 +246,7 @@ module frfcfs_b#(
                 end
             end else begin
                 always @(*) begin
-                    if(last_enqueued_index[GFIFO_SIZE-1] & use_addr) begin
+                    if(last_enqueued_index[GFIFO_SIZE-1] & i_use_addr) begin
                         schedulable_comb[GFIFO_SIZE-1] = 1'b1;
                     end else begin
                         case({shift_enable[GFIFO_SIZE-1], stall})
@@ -258,8 +258,8 @@ module frfcfs_b#(
                 end
             end
 
-            always@(posedge clk) begin
-                if(~rst_n)
+            always@(posedge i_clk) begin
+                if(~i_rstn)
                     schedulable[i] <= #TCQ 1'b0;
                 else
                     schedulable[i] <= #TCQ schedulable_comb[i];
@@ -270,7 +270,7 @@ module frfcfs_b#(
     // extracting the selected request and its corresponding data pointer
 
     for (gfifo_idx=0; gfifo_idx<GFIFO_SIZE; gfifo_idx++) begin : REQ_IDX
-        for (packet_idx=0; packet_idx<PACKET_WDITH; packet_idx++) begin : PCKT_IDX
+        for (packet_idx=0; packet_idx<PACKET_WIDTH; packet_idx++) begin : PCKT_IDX
             assign request_extract_1[gfifo_idx][packet_idx] = (gfifo[gfifo_idx][packet_idx] & sel_idx[gfifo_idx]);
             assign request_extract_2[packet_idx][gfifo_idx] = request_extract_1[gfifo_idx][packet_idx];
             assign won_request[packet_idx] = |request_extract_2[packet_idx];
@@ -281,25 +281,25 @@ module frfcfs_b#(
         for (packet_idx=0; packet_idx<DPTR_WIDTH; packet_idx++) begin
             assign dptr_extract_1[gfifo_idx][packet_idx]    = (dptr_fifo[gfifo_idx][packet_idx] & sel_idx[gfifo_idx]);
             assign dptr_extract_2[packet_idx][gfifo_idx]    = dptr_extract_1[gfifo_idx][packet_idx];
-            assign won_dptr[packet_idx]                     = |dptr_extract_2[packet_idx];
+            assign o_won_dptr[packet_idx]                     = |dptr_extract_2[packet_idx];
         end
     end
     
-    assign won_open     = is_there_any_ready;
-    assign won          = |sel_idx;
-    assign won_addr     = won_request.addr;
-    assign won_ap       = won_request.ap;
-    assign won_cmd      = won_request.cmd;
-    assign won_inject   = won_request.inject;
+    assign o_won_open     = is_there_any_ready;
+    assign o_won_valid    = |sel_idx;
+    assign o_won_addr     = won_request.addr;
+    assign o_won_ap       = won_request.ap;
+    assign o_won_req      = won_request.cmd;
+    assign o_won_inject   = won_request.inject;
 
     // finding the one-hot index of a completed request
     for (i=0; i<GFIFO_SIZE; i++) begin : DONE_IDX
-        assign done_request_idx_rd[i] = ({dptr_fifo[i].req_type, dptr_fifo[i].dptr}   == {1'b1, done_rd_dptr}) & dptr_fifo[i].valid;
-        assign done_request_idx_wr[i] = ({dptr_fifo[i].req_type, dptr_fifo[i].dptr}   == {1'b0, done_wr_dptr}) & dptr_fifo[i].valid;
+        assign done_request_idx_rd[i] = ({dptr_fifo[i].req_type, dptr_fifo[i].dptr}   == {1'b1, i_done_rd_dptr}) & dptr_fifo[i].valid;
+        assign done_request_idx_wr[i] = ({dptr_fifo[i].req_type, dptr_fifo[i].dptr}   == {1'b0, i_done_wr_dptr}) & dptr_fifo[i].valid;
     end
 
     always@(*) begin
-        case({init_data_rd, init_data_wr, init_data_d1})
+        case({i_init_data_rd, i_init_data_wr, init_data_d1})
             3'b000:
                     done_request_idx = 'b0;
             3'b100:
@@ -322,7 +322,7 @@ module frfcfs_b#(
     end
 
     // assigning outputs
-    assign done_valid       = |done_request_idx;
+    assign done_valid = |done_request_idx;
     
     // creating the pattern to know which indices should be shifted
     // for instance if done_request_idx = 8'b0010_0000
@@ -350,8 +350,8 @@ module frfcfs_b#(
             end else begin
                 assign gfifo_ns[GFIFO_SIZE-1] = (wr_en[GFIFO_SIZE-1]) ? arrived_request : gfifo[GFIFO_SIZE-1];
             end
-            always@(posedge clk) begin
-                if(~rst_n)
+            always@(posedge i_clk) begin
+                if(~i_rstn)
                     gfifo_r[i] <= #TCQ 'b0;
                 else
                     gfifo_r[i] <= #TCQ gfifo_ns[i];
@@ -373,8 +373,8 @@ module frfcfs_b#(
     // within data pointer fifo. Sometimes instead of using first_empty_index pointer we need last_occupied_index
     // pointer to write a dptr in the fifo
 
-    always @(posedge clk) begin
-        if(~rst_n)
+    always @(posedge i_clk) begin
+        if(~i_rstn)
             last_occupied_index <= #TCQ {{(GFIFO_SIZE){1'b0}}, 1'b1};
         else begin 
             last_occupied_index <= #TCQ last_occupied_index_comb;
@@ -382,7 +382,7 @@ module frfcfs_b#(
     end    
 
     always @(*) begin
-        case ({use_addr, done_valid})
+        case ({i_use_addr, done_valid})
             2'b10: last_occupied_index_comb = {last_occupied_index[GFIFO_SIZE-1:0], 1'b0};
             2'b01: last_occupied_index_comb = {1'b0, last_occupied_index[GFIFO_SIZE:1]};
             default: last_occupied_index_comb = last_occupied_index;
@@ -399,8 +399,8 @@ module frfcfs_b#(
     //              1- when new request arrives, the pointer is shifted to right by 1 bit
     //              2- when a request finishes, the pointer is shifted to left by 1 bit
 
-    always @(posedge clk) begin
-        if(~rst_n)
+    always @(posedge i_clk) begin
+        if(~i_rstn)
             first_empty_index <= #TCQ {{(GFIFO_SIZE){1'b0}}, 1'b1};
         else begin 
             first_empty_index <= #TCQ first_empty_index_comb;
@@ -408,7 +408,7 @@ module frfcfs_b#(
     end    
 
     always @(*) begin
-        case ({use_addr, done_valid})
+        case ({i_use_addr, done_valid})
             2'b10: first_empty_index_comb = is_full_r ? first_empty_index : {first_empty_index[GFIFO_SIZE-1:0], 1'b0};
             2'b01: first_empty_index_comb = {1'b0, first_empty_index[GFIFO_SIZE:1]};
             default: first_empty_index_comb = first_empty_index;
@@ -416,10 +416,12 @@ module frfcfs_b#(
     end
 
     // determining when the queue is full
-    assign is_full = first_empty_index_comb[GFIFO_SIZE-1];
+    wire is_full_comb;
+    assign is_full_comb = first_empty_index_comb[GFIFO_SIZE-1];
+    assign o_is_full = is_full_comb;
 
-    always @(posedge clk) begin
-        is_full_r <= #TCQ is_full;
+    always @(posedge i_clk) begin
+        is_full_r <= #TCQ is_full_comb;
     end
 
 endmodule

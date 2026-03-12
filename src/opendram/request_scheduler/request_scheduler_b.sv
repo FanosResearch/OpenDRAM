@@ -196,49 +196,55 @@ module request_scheduler_b#(
                         
     frfcfs_b#(
 
-        .CH_WIDTH   (CH_WIDTH),
-        .RNK_WIDTH  (RNK_WIDTH),
-        .BG_WIDTH   (BG_WIDTH),
-        .BNK_WIDTH  (BNK_WIDTH),
-        .COL_WIDTH  (COL_WIDTH),
-        .ROW_WIDTH  (ROW_WIDTH),
+        .CH_SEL_WIDTH   (CH_WIDTH),
+        .RNK_SEL_WIDTH  (RNK_WIDTH),
+        .BG_SEL_WIDTH   (BG_WIDTH),
+        .BNK_SEL_WIDTH  (BNK_WIDTH),
+        .ROW_SEL_WIDTH  (ROW_WIDTH),
+        .COL_SEL_WIDTH  (COL_WIDTH),
         .ADDR_WIDTH (ADDR_WIDTH),
 
         .GFIFO_SIZE (GFIFO_SIZE),
         .DPTR_WIDTH (DPTR_WIDTH),
-        .REQ_WIDTH  (REQ_WIDTH),
+        .REQ_TYPE_WIDTH  (REQ_WIDTH),
 
         .TCQ        (TCQ)
 
         ) frfcfs_b_inst (
     
-        .rst_n                        (rst_n),
-        .clk                          (clk),
-        .channel                      (1'b0),
-        .rank                         (rank),
-        .bg                           (group),
-        .bank                         (bank),
-        .col                          (col),
-        .row                          (row),
-        .dptr                         (dptr_ni2rq),
-        .ap                           (ap),
-        .req_type                     (req_type),
-        .idle_flag                    (idle_flag),
-        .open_row                     (open_row),
-        .use_addr                     (use_addr),
-        .init_data_rd                 (init_data_rd),
-        .init_data_wr                 (init_data_wr),
-        .done_rd_dptr                 (done_rd_dptr),
-        .done_wr_dptr                 (done_wr_dptr),
-        .won_dptr                     (won_dptr),
-        .won_open                     (won_open),
-        .won                          (won),
-        .won_addr                     (won_addr),
-        .won_ap                       (won_ap),
-        .won_cmd                      (won_cmd),
-        .won_inject                   (won_inject),
-        .block_from_command_generator (block_from_command_generator),
-        .block_from_mc_refresh        (block_from_mc_refresh),
-        .is_full                      (is_full)
+        .i_clk                          (clk),
+        .i_rstn                        (rst_n),
+
+        .i_channel                      (1'b0),
+        .i_rank                         (rank),
+        .i_group                           (group),
+        .i_bank                         (bank),
+        .i_row                          (row),
+        .i_column                       (col),
+        .i_dptr                         (dptr_ni2rq),
+        .i_ap                           (ap),
+        .i_req_type                     (req_type),
+
+        .i_bank_is_idle                    (idle_flag),
+        .i_current_open_row                     (open_row),
+        .i_use_addr                     (use_addr),
+        
+        .i_init_data_rd                 (init_data_rd),
+        .i_init_data_wr                 (init_data_wr),
+        .i_done_rd_dptr                 (done_rd_dptr),
+        .i_done_wr_dptr                 (done_wr_dptr),
+        
+        .o_won_dptr                     (won_dptr),
+        .o_won_open                     (won_open),
+        .o_won_valid                          (won),
+        .o_won_addr                     (won_addr),
+        .o_won_ap                       (won_ap),
+        .o_won_req                      (won_cmd),
+        .o_won_inject                   (won_inject),
+
+        .i_block_from_command_generator (block_from_command_generator),
+        .i_block_from_mc_refresh        (block_from_mc_refresh),
+        
+        .o_is_full                      (is_full)
     );
 endmodule
