@@ -40,7 +40,6 @@ module request_scheduler_b#(
 
     parameter GFIFO_SIZE = 6,
     parameter QUEUE_SIZE = 6,
-    parameter QUEUE_SIZE_WIDTH = $clog2(QUEUE_SIZE),
 
     parameter TCQ       = 100
 
@@ -108,7 +107,6 @@ module request_scheduler_b#(
 
     wire [ADDR_WIDTH-1:0]       won_addr;
     wire                        won_ap;
-    wire [QUEUE_SIZE_WIDTH-1:0] won_qptr;
     wire [DPTR_WIDTH-1:0]       won_dptr;
     wire [2-1:0]                won_cmd;
     wire                        won;
@@ -135,47 +133,44 @@ module request_scheduler_b#(
 
     command_generator_b#(
 
-        .CH_WIDTH           (CH_WIDTH),
-        .RNK_WIDTH          (RNK_WIDTH),
-        .BG_WIDTH           (BG_WIDTH),
-        .BNK_WIDTH          (BNK_WIDTH),
-        .COL_WIDTH          (COL_WIDTH),
-        .ROW_WIDTH          (ROW_WIDTH),
+        .CH_SEL_WIDTH           (CH_WIDTH),
+        .RNK_SEL_WIDTH          (RNK_WIDTH),
+        .BG_SEL_WIDTH           (BG_WIDTH),
+        .BNK_SEL_WIDTH          (BNK_WIDTH),
+        .ROW_SEL_WIDTH          (ROW_WIDTH),
+        .COL_SEL_WIDTH          (COL_WIDTH),
         .ADDR_WIDTH         (ADDR_WIDTH),
 
-        .DPTR_WIDTH         (DPTR_WIDTH),
+        .DATA_PTR_WIDTH         (DPTR_WIDTH),
         .CMD_TYPE_WIDTH     (CMD_TYPE_WIDTH),
 
-        .QUEUE_SIZE_WIDTH   (QUEUE_SIZE_WIDTH),
         .PTR_WIDTH          (PTR_WIDTH),
 
-        .BANK_ID            (BANK_ID),
+        .CURRENT_BANK_ID            (BANK_ID),
 
         .TCQ                (TCQ)
 
         ) command_generator_b_inst (
     
-        .clk            (clk), 
-        .rst_n          (rst_n),
+        .i_clk            (clk), 
+        .i_rstn          (rst_n),
 
-        .won_addr       (won_addr),
-        .won_ap         (won_ap),
-        .won_qptr       (won_qptr),
-        .won_dptr       (won_dptr),
-        .won_cmd        (won_cmd),
-        .won            (won),
-        .won_open       (won_open),
-        .won_inject     (won_inject),
+        .i_won_addr       (won_addr),
+        .i_won_ap         (won_ap),
+        .i_won_dptr       (won_dptr),
+        .i_won_req        (won_cmd),
+        .i_won_open       (won_open),
+        .i_won_inject     (won_inject),
+        .i_won_valid      (won),
 
         // Periodic Read
-        .inject_select  (inject_select),
-        .inject_open    (inject_open),
-        .per_rd_req     (per_rd_req),
-        .inject_row     (open_row),
-        .per_rd_accept  (per_rd_accept),
+        .i_inject_select  (inject_select),
+        .i_inject_open    (inject_open),
+        .i_per_rd_req     (per_rd_req),
+        .i_inject_row     (open_row),
+        .o_per_rd_accept  (per_rd_accept),
 
         // Command Queue Interface
-
         .o_channel      (o_channel),
         .o_rank         (o_rank),  
         .o_group        (o_group), 
@@ -184,19 +179,19 @@ module request_scheduler_b#(
         .o_column       (o_column), 
         .o_ptr          (o_ptr),
 
-        .pre_bundle_valid   (pre_bundle_valid),
-        .pre_bundle_cmd     (pre_bundle_cmd), 
+        .o_pre_bundle_valid   (pre_bundle_valid),
+        .o_pre_bundle_cmd     (pre_bundle_cmd), 
     
-        .act_bundle_valid   (act_bundle_valid),
-        .act_bundle_cmd     (act_bundle_cmd),
+        .o_act_bundle_valid   (act_bundle_valid),
+        .o_act_bundle_cmd     (act_bundle_cmd),
     
-        .cas_bundle_valid   (cas_bundle_valid),
-        .cas_bundle_cmd     (cas_bundle_cmd),
+        .o_cas_bundle_valid   (cas_bundle_valid),
+        .o_cas_bundle_cmd     (cas_bundle_cmd),
 
-        .block                  (block_from_command_generator), 
-        .block_from_mc_refresh  (block_from_mc_refresh),
-        .open_request_allowed   (open_request_allowed),
-        .close_request_allowed  (close_request_allowed)
+        .o_block_frfcfs                  (block_from_command_generator), 
+        .i_block_from_mc_refresh  (block_from_mc_refresh),
+        .i_open_request_allowed   (open_request_allowed),
+        .i_close_request_allowed  (close_request_allowed)
     );
                         
     frfcfs_b#(

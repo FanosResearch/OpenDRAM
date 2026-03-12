@@ -218,7 +218,6 @@ module opendram_mc#(
 
     wire                            init_data_n;  
     wire [(DPTR_WIDTH)-1:0]         done_dptr;
-    wire [(QUEUE_SIZE_WIDTH)-1:0]   done_qptr;
     wire                            done_type;
     wire [NUM_BNK_TOT-1:0]          idle_flag;
     wire [ROW_WIDTH-1:0]	        row_bnk [NUM_BNK_TOT-1:0];
@@ -363,7 +362,6 @@ module opendram_mc#(
         .DPTR_WIDTH(DPTR_WIDTH),
 
         .QUEUE_SIZE(QUEUE_SIZE),
-        .QUEUE_SIZE_WIDTH(QUEUE_SIZE_WIDTH),
         .GFIFO_SIZE(GFIFO_SIZE)
 
         ) request_scheduler_wrapper_inst (
