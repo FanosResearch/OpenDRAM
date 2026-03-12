@@ -186,8 +186,8 @@ module command_generator_b#(
     assign o_column_comb = selected_packet.addr.column;
     assign o_ptr_comb = {selected_packet.pointer.data_ptr, selected_packet.pointer.inject};
 
-    assign is_won_accepted = won_packet.open ? ~open_request_allowed : ~close_request_allowed;
-    assign block = is_won_accepted | (~per_rd_accept | ~per_rd_req_r1) & per_rd_req & inject_select;
+    assign is_won_accepted = won_packet.open ? open_request_allowed : close_request_allowed;
+    assign block = ~is_won_accepted | pick_per_rd;
 
 
     assign cas_bundle_cmd_comb = ({selected_packet.req_type[1:0], selected_packet.ap} == 3'b000) ? `CASWR :
@@ -199,7 +199,7 @@ module command_generator_b#(
     // bundles' use signals logic
     assign pre_bundle_valid_comb = (~selected_packet.open & selected_valid) ? (~block_from_mc_refresh & close_request_allowed) : 1'b0;
     assign act_bundle_valid_comb = (~selected_packet.open & selected_valid) ? (~block_from_mc_refresh & close_request_allowed) : 1'b0;
-    assign cas_bundle_valid_comb = selected_valid  & ~block_from_mc_refresh & ~is_won_accepted;
+    assign cas_bundle_valid_comb = selected_valid  & ~block_from_mc_refresh & is_won_accepted;
 
     always_ff @( posedge clk ) begin
 
