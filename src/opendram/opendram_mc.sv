@@ -382,8 +382,7 @@ module opendram_mc#(
         .dptr_ni2rq         (dBufAdr),
         .accept             (mc_accept),
 
-        // .per_rd_req             (per_rd_req),
-        .per_rd_req             (1'b0),
+        .per_rd_req             (per_rd_req),
         .block_from_mc_refresh  (refReq),
         .per_rd_accept          (per_rd_accept),
 
