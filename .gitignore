@@ -2,3 +2,6 @@
 *.jou
 *.log
 /src/opendram/command_scheduler
+/patches/ddr4_0_ddr4_mem_intfc.sv
+/patches/ddr4_v2_2_mc_ctl.sv
+/patches/example_top.sv
