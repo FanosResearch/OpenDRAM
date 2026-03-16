@@ -112,18 +112,12 @@ module request_scheduler_b#(
     wire                    block_from_command_generator;
 
     wire accept_from_ni_comb;
-
-    reg per_rd_req_r1;
-    wire per_rd_block;
-
-    assign accept_from_ni_comb = (~o_is_full & ~per_rd_block);
+    wire is_full_comb;
+    wire per_rd_outstanding_comb;
+    
+    assign o_is_full = is_full_comb;
+    assign accept_from_ni_comb = ~is_full_comb & ~per_rd_outstanding_comb;
     assign o_accept_from_ni = accept_from_ni_comb;
-
-    assign per_rd_block = i_per_rd_req & ~per_rd_req_r1 & i_inject_select;
-
-    always @(posedge i_clk) begin
-        per_rd_req_r1 <= #TCQ i_per_rd_req;
-    end
 
 
     ////////////////////////////////////////////////////////
@@ -168,6 +162,7 @@ module request_scheduler_b#(
         .i_per_rd_req(i_per_rd_req),
         .i_inject_row(i_current_open_row),
         .o_per_rd_accept(o_per_rd_accept),
+        .o_per_rd_outstanding(per_rd_outstanding_comb),
 
         // Command Queue Interface
         .o_channel(o_channel),
@@ -249,6 +244,6 @@ module request_scheduler_b#(
         .i_block_from_command_generator(block_from_command_generator),
         .i_block_from_mc_refresh(i_block_from_mc_refresh),
         
-        .o_is_full(o_is_full)
+        .o_is_full(is_full_comb)
     );
 endmodule
