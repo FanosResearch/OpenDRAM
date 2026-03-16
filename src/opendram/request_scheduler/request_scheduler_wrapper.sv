@@ -21,83 +21,82 @@
 
 module request_scheduler_wrapper#(
 
-    parameter CH_WIDTH = 1,
-    parameter RNK_WIDTH = 1,
-    parameter BG_WIDTH = 1,
-    parameter BNK_WIDTH = 2,
-    parameter COL_WIDTH = 10,
-    parameter ROW_WIDTH = 17,
-    parameter ADDR_WIDTH = (RNK_WIDTH + BG_WIDTH + BNK_WIDTH + COL_WIDTH + ROW_WIDTH),
+    parameter CH_SEL_WIDTH = 1,
+    parameter RNK_SEL_WIDTH = 1,
+    parameter BG_SEL_WIDTH = 1,
+    parameter BNK_SEL_WIDTH = 2,
+    parameter ROW_SEL_WIDTH = 17,
+    parameter COL_SEL_WIDTH = 10,
+    parameter ADDR_WIDTH = (RNK_SEL_WIDTH + BG_SEL_WIDTH + BNK_SEL_WIDTH + COL_SEL_WIDTH + ROW_SEL_WIDTH),
 
-    parameter NUM_CH  = 1,
-    parameter NUM_RNK  = 1,
-    parameter NUM_BG   = 2,
-    parameter NUM_BNK  = 4,
+    parameter NUM_CH = 1,
+    parameter NUM_RNK = 1,
+    parameter NUM_BG = 2,
+    parameter NUM_BNK = 4,
     parameter NUM_BNK_TOT = (NUM_CH * NUM_RNK * NUM_BG * NUM_BNK),
 
-    parameter REQ_WIDTH = 3,
-    parameter CMD_TYPE_WIDTH = 3,    
     parameter DPTR_WIDTH = 5,
     parameter PTR_WIDTH = DPTR_WIDTH + 1,
 
-    parameter QUEUE_SIZE = 6,
-    parameter QUEUE_SIZE_WIDTH = $clog2(QUEUE_SIZE),
+    parameter REQ_TYPE_WIDTH = 3,
+    parameter CMD_TYPE_WIDTH = 3,    
+
     parameter GFIFO_SIZE = 6,
 
     parameter TCQ = 100
 
     )(
 
-    input wire rst_n,
-    input wire clk,
+    input wire i_clk,
+    input wire i_rstn,
     
-    input wire [RNK_WIDTH-1:0]      rank,
-    input wire [BG_WIDTH-1:0]       group,
-    input wire [BNK_WIDTH-1:0]      bank,
-    input wire [COL_WIDTH-1:0]      col,
-    input wire [ROW_WIDTH-1:0]      row,
-    input wire [CMD_TYPE_WIDTH-1:0] req_type,
-    input wire use_addr,
-    input wire ap,
+    input wire [RNK_SEL_WIDTH-1:0]  i_rank,
+    input wire [BG_SEL_WIDTH-1:0]   i_group,
+    input wire [BNK_SEL_WIDTH-1:0]  i_bank,
+    input wire [ROW_SEL_WIDTH-1:0]  i_row,
+    input wire [COL_SEL_WIDTH-1:0]  i_column,
+    input wire [CMD_TYPE_WIDTH-1:0] i_req_type,
+    input wire i_use_addr,
+    input wire i_ap,
 
-    input wire [DPTR_WIDTH-1:0] dptr_ni2rq,
+    input wire [DPTR_WIDTH-1:0] i_dptr_ni2rq,
+    output wire o_accept,
 
-    input   wire    per_rd_req,
-    output  wire    per_rd_accept,
-
-    input wire init_data_n,
+    input wire i_per_rd_req,
+    output wire o_per_rd_accept,
     
-    input wire [NUM_BNK_TOT-1:0] idle_flag,
-    input wire [ROW_WIDTH-1:0] open_row [NUM_BNK_TOT-1:0],
+    input wire i_block_from_mc_refresh,
+    
+    // page table interface
+    input wire [NUM_BNK_TOT-1:0] i_bank_is_idle,
+    input wire [ROW_SEL_WIDTH-1:0] i_current_open_row [NUM_BNK_TOT-1:0],
 
-    output wire [CH_WIDTH-1:0] o_channel [NUM_BNK_TOT-1:0],
-    output wire [RNK_WIDTH-1:0] o_rank [NUM_BNK_TOT-1:0],  
-    output wire [BG_WIDTH-1:0] o_group [NUM_BNK_TOT-1:0], 
-    output wire [BNK_WIDTH-1:0] o_bank [NUM_BNK_TOT-1:0],  
-    output wire [ROW_WIDTH-1:0] o_row [NUM_BNK_TOT-1:0],  
-    output wire [COL_WIDTH-1:0] o_column [NUM_BNK_TOT-1:0], 
+    // CAL TOP
+    input wire                      i_init_data_rd,
+    input wire                      i_init_data_wr,
+    input wire  [DPTR_WIDTH-1:0]    i_done_rd_dptr,
+    input wire  [DPTR_WIDTH-1:0]    i_done_wr_dptr,
+
+    // command queue interface
+    output wire [CH_SEL_WIDTH-1:0] o_channel [NUM_BNK_TOT-1:0],
+    output wire [RNK_SEL_WIDTH-1:0] o_rank [NUM_BNK_TOT-1:0],  
+    output wire [BG_SEL_WIDTH-1:0] o_group [NUM_BNK_TOT-1:0], 
+    output wire [BNK_SEL_WIDTH-1:0] o_bank [NUM_BNK_TOT-1:0],  
+    output wire [ROW_SEL_WIDTH-1:0] o_row [NUM_BNK_TOT-1:0],  
+    output wire [COL_SEL_WIDTH-1:0] o_column [NUM_BNK_TOT-1:0], 
     output wire [PTR_WIDTH-1:0] o_ptr [NUM_BNK_TOT-1:0],
 
-    output wire [NUM_BNK_TOT-1:0]    pre_bundle_valid,
-    output wire [CMD_TYPE_WIDTH-1:0] pre_bundle_cmd [NUM_BNK_TOT-1:0], 
+    output wire [NUM_BNK_TOT-1:0]    o_pre_bundle_valid,
+    output wire [CMD_TYPE_WIDTH-1:0] o_pre_bundle_cmd [NUM_BNK_TOT-1:0], 
     
-    output wire [NUM_BNK_TOT-1:0]    act_bundle_valid,
-    output wire [CMD_TYPE_WIDTH-1:0] act_bundle_cmd [NUM_BNK_TOT-1:0],
+    output wire [NUM_BNK_TOT-1:0]    o_act_bundle_valid,
+    output wire [CMD_TYPE_WIDTH-1:0] o_act_bundle_cmd [NUM_BNK_TOT-1:0],
     
-    output wire [NUM_BNK_TOT-1:0]   cas_bundle_valid,
-    output reg [CMD_TYPE_WIDTH-1:0] cas_bundle_cmd [NUM_BNK_TOT-1:0],
+    output wire [NUM_BNK_TOT-1:0]   o_cas_bundle_valid,
+    output reg [CMD_TYPE_WIDTH-1:0] o_cas_bundle_cmd [NUM_BNK_TOT-1:0],
 
-    input wire [NUM_BNK_TOT-1:0] open_request_allowed,
-    input wire [NUM_BNK_TOT-1:0] close_request_allowed,
-
-    output wire accept,
-
-    input  wire block_from_mc_refresh,
-
-    input wire                      init_data_rd,
-    input wire                      init_data_wr,
-    input wire  [DPTR_WIDTH-1:0]    done_rd_dptr,
-    input wire  [DPTR_WIDTH-1:0]    done_wr_dptr
+    input wire [NUM_BNK_TOT-1:0] i_open_request_allowed,
+    input wire [NUM_BNK_TOT-1:0] i_close_request_allowed
 
     );
 
@@ -112,19 +111,19 @@ module request_scheduler_wrapper#(
     wire [NUM_BNK_TOT-1:0] accept_from_ni;
     wire [NUM_BNK_TOT-1:0] per_rd_accept_b;
 
-    reg [BG_WIDTH-1:0] group_r;
-    reg [BNK_WIDTH-1:0] bank_r;
+    reg [BG_SEL_WIDTH-1:0] group_r;
+    reg [BNK_SEL_WIDTH-1:0] bank_r;
 
-    wire all_banks_closed = &idle_flag;
+    wire all_banks_closed = &i_bank_is_idle;
 
-    assign open_banks_and_not_full  = ~(idle_flag | is_full);
+    assign open_banks_and_not_full  = ~(i_bank_is_idle | is_full);
     assign inject_select            = (all_banks_closed) ? {{(NUM_BNK_TOT-2){1'b0}}, 1'b1} :  inject_index;
 
-    assign per_rd_accept = |per_rd_accept_b;
+    assign o_per_rd_accept = |per_rd_accept_b;
 
-    always @(posedge clk) begin
-        group_r <= #TCQ group;
-        bank_r <= #TCQ bank;
+    always @(posedge i_clk) begin
+        group_r <= #TCQ i_group;
+        bank_r <= #TCQ i_bank;
     end
 
     generate
@@ -139,8 +138,8 @@ module request_scheduler_wrapper#(
         end    
     endgenerate
     
-    assign use_addr_b = request_scheduler_select & {NUM_BNK_TOT{use_addr}};
-    assign accept = &accept_from_ni;
+    assign use_addr_b = request_scheduler_select & {NUM_BNK_TOT{i_use_addr}};
+    assign o_accept = &accept_from_ni;
 
     genvar bt;
     generate
@@ -148,54 +147,60 @@ module request_scheduler_wrapper#(
 
             request_scheduler_b#(
 
-                .CH_WIDTH(CH_WIDTH),
-                .RNK_WIDTH(RNK_WIDTH),
-                .BG_WIDTH(BG_WIDTH),
-                .BNK_WIDTH(BNK_WIDTH),
-                .COL_WIDTH(COL_WIDTH),
-                .ROW_WIDTH(ROW_WIDTH),
+                .CH_SEL_WIDTH(CH_SEL_WIDTH),
+                .RNK_SEL_WIDTH(RNK_SEL_WIDTH),
+                .BG_SEL_WIDTH(BG_SEL_WIDTH),
+                .BNK_SEL_WIDTH(BNK_SEL_WIDTH),
+                .ROW_SEL_WIDTH(ROW_SEL_WIDTH),
+                .COL_SEL_WIDTH(COL_SEL_WIDTH),
                 .ADDR_WIDTH(ADDR_WIDTH),
 
                 .DPTR_WIDTH(DPTR_WIDTH),
                 .PTR_WIDTH(PTR_WIDTH),
 
-                .REQ_WIDTH(REQ_WIDTH),
+                .REQ_TYPE_WIDTH(REQ_TYPE_WIDTH),
                 .CMD_TYPE_WIDTH(CMD_TYPE_WIDTH),
 
-                .BANK_ID(bt),
+                .CURRENT_BANK_ID(bt),
 
                 .GFIFO_SIZE(GFIFO_SIZE),
-                .QUEUE_SIZE(QUEUE_SIZE),
-                .QUEUE_SIZE_WIDTH(QUEUE_SIZE_WIDTH),
 
                 .TCQ(TCQ)
 
             ) request_scheduler_b_inst (
 
-                .rst_n(rst_n),
-                .clk(clk),
+                .i_clk(i_clk),
+                .i_rstn(i_rstn),
     
                 // NI Interface
-                .rank(rank),
-                .group(group),
-                .bank(bank),
-                .col(col),
-                .row(row),
-                .req_type(req_type),
-                .use_addr(use_addr_b[bt]),
-                .ap(ap),
-                .dptr_ni2rq(dptr_ni2rq),
+                .i_rank(i_rank),
+                .i_group(i_group),
+                .i_bank(i_bank),
+                .i_row(i_row),
+                .i_column(i_column),
+                .i_req_type(i_req_type),
+                .i_use_addr(use_addr_b[bt]),
+                .i_ap(i_ap),
+                .i_dptr_ni2rq(i_dptr_ni2rq),
 
-                .per_rd_req(per_rd_req), 
-                .inject_select(inject_select[bt]),
-                .request_scheduler_select(request_scheduler_select[bt]),
-                .accept_from_ni_r(),
-                .accept_from_ni(accept_from_ni[bt]),
-                .inject_open(~all_banks_closed),
-                .per_rd_accept(per_rd_accept_b[bt]),
+                // Page Table
+                .i_bank_is_idle(i_bank_is_idle[bt]),
+                .i_current_open_row(i_current_open_row[bt]),
+                .i_block_from_mc_refresh(i_block_from_mc_refresh),
+
+                .i_per_rd_req(i_per_rd_req), 
+                .i_inject_select(inject_select[bt]),
+                .i_inject_open(~all_banks_closed),
+                .o_per_rd_accept(per_rd_accept_b[bt]),
+
+                .o_accept_from_ni(accept_from_ni[bt]),
     
-                .stall(stall),
-                .is_full(is_full[bt]),
+                .i_init_data_rd(i_init_data_rd),
+                .i_init_data_wr(i_init_data_wr),
+                .i_done_rd_dptr(i_done_rd_dptr),
+                .i_done_wr_dptr(i_done_wr_dptr),
+
+                .o_is_full(is_full[bt]),
 
                 // Command Queue Interface
                 .o_channel(o_channel[bt]),
@@ -205,24 +210,18 @@ module request_scheduler_wrapper#(
                 .o_row(o_row[bt]),  
                 .o_column(o_column[bt]), 
                 .o_ptr(o_ptr[bt]),
-                .pre_bundle_valid(pre_bundle_valid[bt]),
-                .pre_bundle_cmd(pre_bundle_cmd[bt]), 
-                .act_bundle_valid(act_bundle_valid[bt]),
-                .act_bundle_cmd(act_bundle_cmd[bt]),
-                .cas_bundle_valid(cas_bundle_valid[bt]),
-                .cas_bundle_cmd(cas_bundle_cmd[bt]),
-                .open_request_allowed(open_request_allowed[bt]),
-                .close_request_allowed(close_request_allowed[bt]),
 
-                // Page Table
-                .idle_flag(idle_flag[bt]),
-                .open_row(open_row[bt]),
-                .block_from_mc_refresh(block_from_mc_refresh),
+                .o_pre_bundle_valid(o_pre_bundle_valid[bt]),
+                .o_pre_bundle_cmd(o_pre_bundle_cmd[bt]), 
 
-                .init_data_rd(init_data_rd),
-                .init_data_wr(init_data_wr),
-                .done_rd_dptr(done_rd_dptr),
-                .done_wr_dptr(done_wr_dptr)
+                .o_act_bundle_valid(o_act_bundle_valid[bt]),
+                .o_act_bundle_cmd(o_act_bundle_cmd[bt]),
+
+                .o_cas_bundle_valid(o_cas_bundle_valid[bt]),
+                .o_cas_bundle_cmd(o_cas_bundle_cmd[bt]),
+
+                .i_open_request_allowed(i_open_request_allowed[bt]),
+                .i_close_request_allowed(i_close_request_allowed[bt])
             );
         end
     endgenerate 

@@ -218,7 +218,6 @@ module opendram_mc#(
 
     wire                            init_data_n;  
     wire [(DPTR_WIDTH)-1:0]         done_dptr;
-    wire [(QUEUE_SIZE_WIDTH)-1:0]   done_qptr;
     wire                            done_type;
     wire [NUM_BNK_TOT-1:0]          idle_flag;
     wire [ROW_WIDTH-1:0]	        row_bnk [NUM_BNK_TOT-1:0];
@@ -345,56 +344,57 @@ module opendram_mc#(
 
     request_scheduler_wrapper#(
 
-        .CH_WIDTH(CH_WIDTH),
-        .RNK_WIDTH(RNK_WIDTH),
-        .BG_WIDTH(BG_WIDTH),
-        .BNK_WIDTH(BNK_WIDTH),
-        .COL_WIDTH(COL_WIDTH),
-        .ROW_WIDTH(ROW_WIDTH),
+        .CH_SEL_WIDTH(CH_WIDTH),
+        .RNK_SEL_WIDTH(RNK_WIDTH),
+        .BG_SEL_WIDTH(BG_WIDTH),
+        .BNK_SEL_WIDTH(BNK_WIDTH),
+        .ROW_SEL_WIDTH(ROW_WIDTH),
+        .COL_SEL_WIDTH(COL_WIDTH),
 
         .NUM_CH(NUM_CH),
         .NUM_RNK(NUM_RNK),
         .NUM_BG(NUM_BG),
         .NUM_BNK(NUM_BNK),
         .NUM_BNK_TOT(NUM_BNK_TOT),
-
-        .REQ_WIDTH(REQ_WIDTH),
-        .CMD_TYPE_WIDTH(CMD_TYPE_WIDTH),
+        
         .DPTR_WIDTH(DPTR_WIDTH),
 
-        .QUEUE_SIZE(QUEUE_SIZE),
-        .QUEUE_SIZE_WIDTH(QUEUE_SIZE_WIDTH),
+        .REQ_TYPE_WIDTH(REQ_WIDTH),
+        .CMD_TYPE_WIDTH(CMD_TYPE_WIDTH),
+
         .GFIFO_SIZE(GFIFO_SIZE)
 
         ) request_scheduler_wrapper_inst (
 
-        .rst_n(rst_nr1),
-        .clk(clk),
+        .i_clk(clk),
+        .i_rstn(rst_nr1),
 
-        .group              (group),
-        .rank               (rank),
-        .bank               (bank),
-        .col                (col),
-        .row                (row),
-        .req_type           (req_type),
-        .use_addr           (useAdr),
-        .ap                 (ap),
-        .dptr_ni2rq         (dBufAdr),
-        .accept             (mc_accept),
+        .i_rank               (rank),
+        .i_group              (group),
+        .i_bank               (bank),
+        .i_row                (row),
+        .i_column                (col),
+        .i_req_type           (req_type),
+        .i_use_addr           (useAdr),
+        .i_ap                 (ap),
 
-        .per_rd_req             (per_rd_req),
-        .block_from_mc_refresh  (refReq),
-        .per_rd_accept          (per_rd_accept),
+        .i_dptr_ni2rq         (dBufAdr),
+        .o_accept             (mc_accept),
+
+        .i_per_rd_req             (per_rd_req),
+        .o_per_rd_accept          (per_rd_accept),
+
+        .i_block_from_mc_refresh  (refReq),
 
         // page table interface
-        .idle_flag              (~idle_flag),
-        .open_row               (row_bnk),
+        .i_bank_is_idle              (~idle_flag),
+        .i_current_open_row               (row_bnk),
 
         // CAL TOP
-        .init_data_rd           (init_data_rd),
-        .init_data_wr           (init_data_wr),
-        .done_rd_dptr           (done_rd_dptr),
-        .done_wr_dptr           (done_wr_dptr),
+        .i_init_data_rd           (init_data_rd),
+        .i_init_data_wr           (init_data_wr),
+        .i_done_rd_dptr           (done_rd_dptr),
+        .i_done_wr_dptr           (done_wr_dptr),
 
         // command queue interface
         .o_channel                  (o_channel),
@@ -404,14 +404,16 @@ module opendram_mc#(
         .o_row                      (o_row),  
         .o_column                   (o_column), 
         .o_ptr                      (o_ptr),
-        .pre_bundle_valid           (pre_bundle_valid),
-        .pre_bundle_cmd             (pre_bundle_cmd), 
-        .act_bundle_valid           (act_bundle_valid),
-        .act_bundle_cmd             (act_bundle_cmd),
-        .cas_bundle_valid           (cas_bundle_valid),
-        .cas_bundle_cmd             (cas_bundle_cmd),
-        .open_request_allowed       (open_request_allowed),
-        .close_request_allowed      (close_request_allowed)
+
+        .o_pre_bundle_valid           (pre_bundle_valid),
+        .o_pre_bundle_cmd             (pre_bundle_cmd), 
+        .o_act_bundle_valid           (act_bundle_valid),
+        .o_act_bundle_cmd             (act_bundle_cmd),
+        .o_cas_bundle_valid           (cas_bundle_valid),
+        .o_cas_bundle_cmd             (cas_bundle_cmd),
+
+        .i_open_request_allowed       (open_request_allowed),
+        .i_close_request_allowed      (close_request_allowed)
     );
 
 
