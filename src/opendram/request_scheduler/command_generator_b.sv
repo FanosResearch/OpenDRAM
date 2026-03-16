@@ -56,6 +56,7 @@ module command_generator_b#(
     input   wire                        i_per_rd_req,
     input   wire [ROW_SEL_WIDTH-1:0]    i_inject_row,
     output  wire                        o_per_rd_accept,
+    output  wire                        o_per_rd_outstanding,
 
     // Command Queue Interface
     output reg [CH_SEL_WIDTH-1:0]   o_channel,
@@ -341,5 +342,10 @@ module command_generator_b#(
     assign per_rd_accept_next_comb = (per_rd_req_internal_reg | per_rd_req_internal_next_comb)
                                    & inject_issue_allowed
                                    & ~per_rd_accept_reg;
-   
+                                   
+    // stays high from periodic read request (i_per_rd_req)
+    // until it is accepted (o_per_rd_accept)
+    // used to block the native interface
+    assign o_per_rd_outstanding = pick_per_rd;
+    
 endmodule
