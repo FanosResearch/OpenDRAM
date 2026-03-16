@@ -4,7 +4,7 @@
  
  `timescale 1ns/100ps
  
-+`include "../global.svh"
++`include "../../../../../../../../src/opendram/global.svh"
 +
 +`ifdef USE_RELATIVE_PATH_INCLUDES
 +   `include "ddr4_v2_2_cal_mc_odt.sv"
