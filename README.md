@@ -14,17 +14,29 @@ This repository contains source files related to the proposed memory controller.
 ## Requirements
 - AMD Vivado Design Suite 2022.1
 
-## Generating OpenDRAM on Ubuntu
+## Generating OpenDRAM and the Simulation Platform
 
-There are three scripts that must be executed as follows in three steps.
+There are three scripts that must be executed as follows to instantiate OpenDRAM, AMD MIG PHY, and the simulation platform. Although our scripts are written for Ubuntu and do not directly work on Windows, users can execute the PowerShell scripts provided in each step to generate OpenDRAM through Windows Subsystem for Linux (WSL).
+
+Please note that in order to use PowerShell scripts, user must:
+1. Ensure that the WSL is enabled and the command "wsl" works on their PowerShell.
+2. Ensure that Vivado can be executed through PowerShell using command "vivado".
 
 ### Step 1: Updating Source Files
 
+The script below updates the source files for the indicated command scheduler version. It also updates the timing constraints files based on the desired memory part.
+
+**Ubuntu**
 ```
 ./01_update_sources_linux.sh -cs [command_scheduler_version] -part [memory_part]
 ```
 
-This script updates the source files for the indicated command scheduler version. It also updates the timing constraints files based on the desired memory part.
+**Windows**
+```
+.\01_update_sources_powershell.ps1      
+```
+
+** Unlike the Ubuntu script, the PowerShell script in this step does not accept any command-line arguments. Therefore, users should change the arguments as desired inside the file, where it calls the Ubuntu script.
 
 **Supported values for [command_scheduler_version]:** a number between 1 to 5 (the version index)
     
@@ -32,33 +44,37 @@ This script updates the source files for the indicated command scheduler version
 
 ### Step 2: Creating Vivado Project, Importing Sources, Generating IPs
 
+The script in step 2 creates a Vivado project, imports OpenDRAM sources, and generate AMD MIG and AMD AXI VIP. The Vivado project will open at the end of this script.
+
+**Ubuntu**
 ```
 ./02_gen_opendram_linux.sh
 ```
 
-The script in step 2 creates a Vivado project, imports OpenDRAM sources, and generate AMD MIG and AMD AXI VIP. The Vivado project will open at the end of this script.
+**Windows**
+```
+.\02_gen_opendram_powershell.ps1  
+```
 
 ### Step 3: Apply Patches to AMD MIG Files to Use OpenDRAM
 
+After executing this step, the MIG files get updated to instantiate OpenDRAM as the controller.
+
+**Ubuntu**
 ```
 ./03_run_patches_linux.sh
 ```
 
-By using this script, MIG files get updated to instantiate OpenDRAM as the controller.
+**Windows**
+```
+.\03_run_patches_powershell.ps1
+```
 
-## Generating OpenDRAM on Windows
+### Step 4: Running Simulations
 
-Although our script are written for Ubuntu and do not directly work on Windows, users can execute the following three PowerShell scripts to generate OpenDRAM using provided Ubuntu scripts through Windows Subsystem for Linux (WSL).
+Users are able to run simulations using either the synthesizable MIG Traffic Generator (MIG TG, hereafter) or the non-synthesizable custom infrastructor (AXI VIP, hereafter), depending on the macros defined below.
 
-** Unlike the Ubuntu scripts, the first PowerShell script does not accept any command-line arguments. Therefore, users should change the arguments as desired inside the file, where it calls the Ubuntu script.
-
-Please note that in order to use these scripts, user must:
-1. Ensure that the WSL is enabled and the command "wsl" works on their PowerShell
-2. Ensure that Vivado can be executed through PowerShell using command "vivado"
-
-## Running Simulations
-
-Users are able to run simulations using either the synthesizable MIG traffic generator or the non-synthesizable custom infrastructor. The custom simulation infrastructure is developed using AMD AXI VIP, which reads memory access traces in a particular format and generates corresponding requests to the memory controller. Our infrustructure is able to mimic a multi-kernel system in which the arbitration is done in a round-robin fashion. Users can also define the size of stream buffer for kernels. Both type of simulations can be simply run through Vivado ISIM.
+The custom simulation infrastructure is developed using AMD AXI VIP, which reads memory access traces in a particular format and generates corresponding requests to the memory controller. Our infrustructure is able to mimic a multi-kernel system in which the arbitration is done in a round-robin fashion. Users can also define the size of stream buffer for kernels. Both type of simulations can be simply run through Vivado ISIM.
 
 Setup parameters for the simulation infrastructure are accessible in the file below.
 
@@ -99,7 +115,7 @@ This repository accompanies the research paper:
 
 🔗 **ACM Digital Library:** <https://dl.acm.org/doi/10.1145/3772724>
 
-Slides presented at the [International Conference on Field-Programmable Technology (FPT2025)](https://fpt2025.shanghaitech.edu.cn/): [View](fpt2025/opendram_fpt2025.pdf)
+📊 **Slides presented at the [International Conference on Field-Programmable Technology (FPT2025)](https://fpt2025.shanghaitech.edu.cn/):** [View Here](fpt2025/opendram_fpt2025.pdf)
 
 If you use OpenDRAM in your work, please cite us:
 
@@ -108,14 +124,18 @@ If you use OpenDRAM in your work, please cite us:
 author = {Abbasi, Ali and Germchi, Danesh and Katani, Amin and Hassan, Mohamed and Pellizzoni, Rodolfo},
 title = {OpenDRAM: A Modular, High-performance Soft Memory Controller for DDR4 DRAM},
 year = {2025},
+issue_date = {December 2025},
 publisher = {Association for Computing Machinery},
 address = {New York, NY, USA},
+volume = {18},
+number = {4},
 issn = {1936-7406},
 url = {https://doi.org/10.1145/3772724},
 doi = {10.1145/3772724},
-note = {Just Accepted},
 journal = {ACM Trans. Reconfigurable Technol. Syst.},
-month = oct,
+month = dec,
+articleno = {56},
+numpages = {27},
 keywords = {DRAM, Memory Controller, High-performance Memory, FPGA, Open-source}
 }
 ```
