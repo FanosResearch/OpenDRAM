@@ -1,5 +1,5 @@
---- ../gen/ddr4_0_ex/ddr4_0_ex.srcs/sources_1/ip/ddr4_0/rtl/ip_top/ddr4_0_ddr4_mem_intfc.sv	2025-04-30 15:46:11.000000000 -0400
-+++ ./ddr4_0_ddr4_mem_intfc.sv	2025-04-30 11:08:12.000000000 -0400
+--- ../gen/ddr4_0_ex/ddr4_0_ex.srcs/sources_1/ip/ddr4_0/rtl/ip_top/ddr4_0_ddr4_mem_intfc.sv	2026-03-16 16:42:14.000000000 -0400
++++ ./ddr4_0_ddr4_mem_intfc.sv	2026-03-16 16:27:04.276961600 -0400
 @@ -64,6 +64,7 @@
  // Revision History :
  //*****************************************************************************
@@ -28,7 +28,7 @@
  )
    (
      input                           sys_clk_p
-@@ -761,166 +775,139 @@
+@@ -761,166 +775,141 @@
  localparam tWTR_L_HOST = (LRDIMM_MODE=="ON") ? tWTR_L + LRDIMM_DELAY : tWTR_L;
  localparam tRTW_HOST   = (LRDIMM_MODE=="ON") ? tRTW + LRDIMM_DELAY : tRTW;
  
@@ -318,17 +318,19 @@
 +    ,.stop_gate_tracking_ack  (stop_gate_tracking_ack)
 +    ,.stop_gate_tracking_req  (stop_gate_tracking_req)
 +    ,.per_rd_done             (per_rd_done)
-+    ,.ref_req                 () 
-+    ,.zq_req                  () 
-+    ,.sre_req                 () 
++    ,.ref_req                 (1'b0) 
++    ,.zq_req                  (1'b0) 
++    ,.sre_req                 (1'b0) 
 +    ,.sre_ack                 () 
-+    ,.ui_busy                 () 
++    ,.ui_busy                 (1'b0) 
 +    ,.mc_block_req            (mc_block_req)    
 +    ,.cmd_complete            ()       
++    ,.srx_cke0_release        (1'b0)
++    ,.srx_req                 (1'b0)
  );
  
    assign rdDataOffset = 1'b0;
-@@ -1232,7 +1219,7 @@
+@@ -1232,7 +1221,7 @@
     ,.mcRdCAS                     (mcRdCAS)
     ,.mcWrCAS                     (mcWrCAS)
     ,.winInjTxn                   (winInjTxn)
